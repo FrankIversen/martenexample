@@ -4,12 +4,12 @@ using Marten.Schema.Identity;
 using Marten.Services.Json;
 using Weasel.Core;
 using WebApplication1;
+using WebApplication1.Services;
 using WebApplication1.Services.SupplierRepository;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
-
+builder.Services.AddScoped<DummyTenancyContext>();
 builder.Services.AddScoped<SupplierRepository.ISupplierRepository, SupplierRepository>();
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
@@ -50,7 +50,9 @@ builder.Services.AddMarten(opts =>
             
             //dependent on Environment.IsDevelopment()
             opts.GeneratedCodeMode = TypeLoadMode.Auto;
-        });
+        })
+    .UseLightweightSessions()
+    .BuildSessionsWith<TenantedSessionFactory>(ServiceLifetime.Scoped);
 
 builder.Services.AddHostedService<Test>();
 

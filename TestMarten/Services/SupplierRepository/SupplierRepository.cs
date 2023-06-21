@@ -1,25 +1,30 @@
 ﻿using System.Data;
+using System.Text.Json.Serialization;
 using Marten;
 
 namespace WebApplication1.Services.SupplierRepository;
 
 public class SupplierRepository : SupplierRepository.ISupplierRepository
 {
-    private readonly IDocumentStore _documentStore;
+    private readonly IDocumentSession _documentSession;
     private readonly ILogger<SupplierRepository> _logger;
 
-    public SupplierRepository(IDocumentStore documentStore, ILogger<SupplierRepository> logger )
+    public SupplierRepository(IDocumentSession documentSession, ILogger<SupplierRepository> logger )
     {
-        _documentStore = documentStore;
+        _documentSession = documentSession;
         _logger = logger;
+    }
+
+    public SupplierAggregate? Find(Guid id)
+    {
+        return _documentSession.Load<SupplierAggregate>(id);
     }
 
     public void PersistUpsert(SupplierAggregate supplierAggregateModel)
     {
         Console.WriteLine($"msg='trying to save to db', supplierId={supplierAggregateModel.Id}");
-        using var dbSession = _documentStore.LightweightSession("tenant1", IsolationLevel.Serializable);
-        dbSession.Store(supplierAggregateModel);
-        dbSession.SaveChanges();
+        _documentSession.Store(supplierAggregateModel);
+        _documentSession.SaveChanges();
         Console.WriteLine($"msg='trying to save to db', supplierId={supplierAggregateModel.Id}");
     }
 
@@ -30,7 +35,8 @@ public class SupplierRepository : SupplierRepository.ISupplierRepository
         public Guid Id { get; set; }
 
        
-        private SupplierAggregate(Guid id)
+        [JsonConstructor]
+        public SupplierAggregate(Guid id)
         {
             Id = id;
         }
@@ -44,6 +50,7 @@ public class SupplierRepository : SupplierRepository.ISupplierRepository
     }
     public interface ISupplierRepository
     {
+        SupplierAggregate? Find(Guid id);
         void PersistUpsert(SupplierAggregate supplierAggregateModel);
     }
     
